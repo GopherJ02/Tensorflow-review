@@ -1,0 +1,53 @@
+import tensorflow as tf
+from tensorflow.examples.tutorials.mnist import input_data
+
+mnist = input_data.read_data_sets("MNIST_data",one_hot=True)
+#批次大小
+batch_size =50
+
+#批次数量
+n_batch = mnist.train.num_examples // batch_size
+
+x=tf.placeholder(tf.float32,[None,784]) #28*28图片
+y=tf.placeholder(tf.float32,[None,10]) #10个数字标签
+
+keep_prob=tf.placeholder(tf.float32)
+
+#神经网络
+W1=tf.Variable(tf.truncated_normal([784,2000],stddev=0.1))
+b1=tf.Variable(tf.zeros([2000])+0.1)
+W1_plus_b1=tf.matmul(x,W1)+b1
+L1 = tf.nn.relu(W1_plus_b1)
+drop=tf.nn.dropout(L1,keep_prob)
+
+W2=tf.Variable(tf.truncated_normal([2000,10],stddev=0.1))
+b2=tf.Variable(tf.zeros([10])+0.1)
+W2_plus_b2=tf.matmul(drop,W2)+b2
+prediction = tf.nn.softmax(W2_plus_b2)
+
+
+#二次代价函数
+#loss=tf.reduce_mean(tf.square(y-prediction))
+
+#交叉熵
+loss=tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y,logits=prediction))
+train_step=tf.train.GradientDescentOptimizer(0.1).minimize(loss)
+
+#初始化
+init=tf.global_variables_initializer()
+
+#检验正确率
+correct_prediction = tf.equal(tf.argmax(y,1),tf.argmax(prediction,1))
+accuracy = tf.reduce_mean(tf.cast(correct_prediction,tf.float32))
+
+with tf.Session() as sess:
+  sess.run(init)
+  for epoch in range(61):
+    for batch in range(n_batch):
+      batch_xs,batch_ys = mnist.train.next_batch(batch_size)
+      sess.run(train_step,feed_dict={x:batch_xs,y:batch_ys,keep_prob:0.8})
+      
+    acc = sess.run(accuracy,feed_dict = {x:mnist.test.images,y:mnist.test.labels,keep_prob:1.0})
+    print("iter " + str(epoch)+" Testing Accuracy " +str(acc))
+
+    
